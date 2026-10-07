@@ -1,0 +1,38 @@
+name: Deploy Blazor WASM
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - run: dotnet publish -c Release -o release
+
+      - name: Fix base href
+        run: sed -i 's|<base href="/" />|<base href="/WASM-Test/" />|' release/wwwroot/index.html
+
+      - name: SPA fallback and no-jekyll
+        run: |
+          cp release/wwwroot/index.html release/wwwroot/404.html
+          touch release/wwwroot/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: release/wwwroot
+
+      - uses: actions/deploy-pages@v4
